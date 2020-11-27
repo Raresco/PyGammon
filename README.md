@@ -1,0 +1,2 @@
+# pytable
+proiect python facultate
