@@ -4,6 +4,68 @@ import random
 pygame.init()  # Initalizare pygame
 
 
+class Board:
+
+    def __init__(self):
+        self.board = [2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 3, 0, 5, 0, 0, 0, 0, -2]
+        self.piece_length = 45
+        self.endgame_mov = False
+        self.endgame_bej = False
+        self.piese_stricate_bej = 0
+        self.piese_stricate_mov = 0
+        self.piese_afara_bej = 0
+        self.piese_afara_mov = 0
+
+    def type_of_move(self, x, die_value, player):
+        if (self.board[x] ^ player) > 0:
+            if (self.board[x + die_value] ^ player) > 0:
+                return 1    # Valid
+            elif self.board[x + die_value] == 0:
+                return 1    # Valid
+            elif self.board[x + die_value] == -1 * player:
+                return 2    # Valid + Take Piece
+        return 0    # Invalid
+
+    def make_move(self, x, y, player):
+        if self.type_of_move(x, y, player) == 0:
+            print("Invalid Move!")
+
+    def change_board_state(self, board):
+        self.board = board
+
+    def draw_pieces(self, cordonate):
+        temporary_board = self.board
+        p1_piese_afara = font.render(str(self.piese_afara_bej), True, (255, 255, 255))
+        p2_piese_afara = font.render(str(self.piese_afara_mov), True, (255, 255, 255))
+        screen.blit(piesa_mov, (150, 50))
+        screen.blit(piesa_bej, (150, 480))
+        screen.blit(p1_piese_afara, (165, 60))
+        screen.blit(p2_piese_afara, (165, 490))
+
+        for i in range(len(temporary_board)):
+            if temporary_board[i] > 0:
+                nr_piese = temporary_board[i]
+                if i < 12:
+                    while nr_piese > 0:
+                        screen.blit(piesa_bej, (cordonate[i], -30 + nr_piese * 45))
+                        nr_piese -= 1
+                else:
+                    while nr_piese > 0:
+                        screen.blit(piesa_bej, (cordonate[i], 585 - nr_piese * 45))
+                        nr_piese -= 1
+
+            if temporary_board[i] < 0:
+                nr_piese = temporary_board[i]
+                if i < 12:
+                    while nr_piese < 0:
+                        screen.blit(piesa_mov, (cordonate[i], -30 - nr_piese * 45))
+                        nr_piese += 1
+                else:
+                    while nr_piese < 0:
+                        screen.blit(piesa_mov, (cordonate[i], 585 - abs(nr_piese) * 45))
+                        nr_piese += 1
+
+
 class Dice:
     @staticmethod
     def roll_dice():
@@ -18,6 +80,7 @@ class Dice:
             screen.blit(zaruri_png[dice_roll[0]], (20, 275))
             screen.blit(zaruri_png[dice_roll[1]], (100, 275))
             pygame.display.update()
+
 
 class Button:
     def __init__(self, x_coordinate, y_coordinate, image, image_toggled, image_pressed):
@@ -82,6 +145,8 @@ human_vs_human_pressed = pygame.image.load("images/hvh3.png")
 human_vs_ai = pygame.image.load("images/hva1.png")
 human_vs_ai_toggled = pygame.image.load("images/hva2.png")
 human_vs_ai_pressed = pygame.image.load("images/hva3.png")
+piesa_mov = pygame.image.load("images/piesa_mov.png")
+piesa_bej = pygame.image.load("images/piesa_bej.png")
 
 # PNG's for dice
 die_1 = pygame.image.load("images/dice_1.png")
@@ -91,12 +156,44 @@ die_4 = pygame.image.load("images/dice_4.png")
 die_5 = pygame.image.load("images/dice_5.png")
 die_6 = pygame.image.load("images/dice_6.png")
 
+font = pygame.font.SysFont(None, 40)
+p1_img = font.render('Player 1', True, (255, 213, 175))
+p2_img = font.render('Player 2', True, (100, 48, 107))
+
 # Initialize Clock
 clock = pygame.time.Clock()
 clock.tick(60)
 
 # Initialize game_state
 game_state = "menu1"
+
+coordonate = {
+    0: 214,
+    1: 258,
+    2: 304,
+    3: 349,
+    4: 394,
+    5: 439,
+    6: 515,
+    7: 560,
+    8: 605,
+    9: 650,
+    10: 695,
+    11: 740,
+    23: 214,
+    22: 259,
+    21: 304,
+    20: 349,
+    19: 394,
+    18: 439,
+    17: 515,
+    16: 560,
+    15: 605,
+    14: 650,
+    13: 695,
+    12: 740,
+}
+
 
 zaruri_png = {
     1: die_1,
@@ -110,9 +207,18 @@ zaruri_png = {
 hvh_button = Button(305, 200, human_vs_human, human_vs_human_toggled, human_vs_human_pressed)
 hva_button = Button(328, 300, human_vs_ai, human_vs_ai_toggled, human_vs_ai_pressed)
 
+
 def display_menu_background():
     screen.blit(menu_background, (0, 0))
     screen.blit(logo, (300, 25))
+
+
+def draw():
+    display_menu_background()
+    screen.blit(board_image, (199, 0))
+    screen.blit(wood_texture, (0, 0))
+    screen.blit(p2_img, (15, 20))
+    screen.blit(p1_img, (15, 530))
 
 
 def main_menu():
@@ -147,38 +253,45 @@ def main_menu():
 
     pygame.display.update()
 
-
-def player_vs_player_menu(start):
-    global running
-    display_menu_background()
-    screen.blit(board_image, (199, 0))
-    screen.blit(wood_texture, (0, 0))
+diceRoll = 0
+def player_vs_player():
+    global diceRoll
+    player = 1
+    global running, dice_rolled
+    draw()
+    tabla.draw_pieces(coordonate)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
             pygame.quit()
-
-        if event.type == pygame.KEYDOWN:
+        elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 Dice.play_dice_animation()
                 dice_rolled = Dice.roll_dice()
-                start = True
+                diceRoll = 1
 
-    if start:
-        screen.blit(zaruri_png[dice_rolled[0]], (20, 275))
-        screen.blit(zaruri_png[dice_rolled[1]], (100, 275))
-        pygame.display.update()
+    if diceRoll == 1:
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                print("")
+                # TO-DO
+    screen.blit(zaruri_png[dice_rolled[0]], (20, 275))
+    screen.blit(zaruri_png[dice_rolled[1]], (100, 275))
+
+    pygame.display.update()
 
 
 # Game Loop
 running = True
+tabla = Board()
+tabla.__init__()
+dice_rolled = Dice.roll_dice()
 while running:
     if game_state == "menu1":
         main_menu()
     elif game_state == "menu2":
-        player_vs_player_menu(False)
+        player_vs_player()
 
-    pygame.display.update()
 
 
