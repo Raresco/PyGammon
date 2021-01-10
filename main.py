@@ -8,6 +8,7 @@ class Board:
 
     def __init__(self):
         self.board = [2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 3, 0, 5, 0, 0, 0, 0, -2]
+        self.vector_selectii = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.piece_length = 45
         self.endgame_mov = False
         self.endgame_bej = False
@@ -16,7 +17,42 @@ class Board:
         self.piese_afara_bej = 0
         self.piese_afara_mov = 0
 
+    def display_from_vector(self):
+        for i in range(len(self.vector_selectii)):
+            if self.vector_selectii[i] == 1:
+                if i < 12:
+                    screen.blit(selection_current, (coordonate[i], 1))
+                else:
+                    screen.blit(selection_current, (coordonate[i], 594))
+
+            if self.vector_selectii[i] == 2:
+                if i < 12:
+                    screen.blit(selection_available, (coordonate[i], 1))
+                else:
+                    screen.blit(selection_available, (coordonate[i], 594))
+
+    def add_selected(self, coordonata, player):
+        if (self.board[coordonata] ^ player) > 0 and self.board[coordonata] != 0:
+            self.vector_selectii[coordonata] = 1
+
+    def add_available(self, x, d1, d2, player):
+        if self.type_of_move(x, d1, player) != 0 and self.board[x] != 0:
+            self.vector_selectii[x+d1] = 2
+
+        if self.type_of_move(x, d2, player) != 0 and self.board[x] != 0:
+            self.vector_selectii[x + d2] = 2
+
+        if self.type_of_move(x, d1 + d2, player) != 0 and self.board[x] != 0:
+            self.vector_selectii[x + d1 + d2] = 2
+
+    def reset(self):
+        self.vector_selectii = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
     def type_of_move(self, x, die_value, player):
+
+        if x + die_value > 23:
+            return 0    # Invalid
+
         if (self.board[x] ^ player) > 0:
             if (self.board[x + die_value] ^ player) > 0:
                 return 1    # Valid
@@ -120,6 +156,45 @@ class Button:
         pygame.time.wait(300)
 
 
+class Moves():
+    def __init__(self):
+        self.vector_selectii = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    def display_sss(self):
+        for i in range(len(self.vector_selectii)):
+            if self.vector_selectii[i] == 1:
+                if i < 12:
+                    screen.blit(selection_current, (coordonate[i], 1))
+                else:
+                    screen.blit(selection_current, (coordonate[i], 594))
+
+    def add_selected(self, coordonata):
+        self.vector_selectii[coordonata] = 1
+        print(self.vector_selectii)
+
+    def reset(self):
+        self.vector_selectii = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+def get_position(pos):
+    x, y = pos
+    print("pozitie = ", x, ", ", y)
+    if 200 < x < 487:
+        if y < 225:
+            row = (x - 200) // 45
+            return row
+        elif y > 375:
+            row = 23 - (x-200) // 45
+            return row
+    elif x > 520:
+        if y < 225:
+            row = (x - 235) // 45
+            return row
+        elif y > 375:
+            row = 23 - (x-235) // 45
+            return row
+
+
 dice_sound = pygame.mixer.Sound("sounds/dice_roll.wav")
 
 # Initializare ecran
@@ -147,6 +222,8 @@ human_vs_ai_toggled = pygame.image.load("images/hva2.png")
 human_vs_ai_pressed = pygame.image.load("images/hva3.png")
 piesa_mov = pygame.image.load("images/piesa_mov.png")
 piesa_bej = pygame.image.load("images/piesa_bej.png")
+selection_available = pygame.image.load("images/available.png")
+selection_current = pygame.image.load("images/selected.png")
 
 # PNG's for dice
 die_1 = pygame.image.load("images/dice_1.png")
@@ -253,10 +330,13 @@ def main_menu():
 
     pygame.display.update()
 
+
 diceRoll = 0
+current_player = 1
+
+
 def player_vs_player():
-    global diceRoll
-    player = 1
+    global diceRoll, current_player
     global running, dice_rolled
     draw()
     tabla.draw_pieces(coordonate)
@@ -272,10 +352,16 @@ def player_vs_player():
                 diceRoll = 1
 
     if diceRoll == 1:
-        for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                print("")
-                # TO-DO
+        event = pygame.event.wait()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pos = pygame.mouse.get_pos()
+            selected = get_position(pos)
+            if selected is not None:
+                tabla.reset()
+                tabla.add_selected(selected, current_player)
+                tabla.add_available(selected, dice_rolled[0], dice_rolled[1], current_player)
+
+    tabla.display_from_vector()
     screen.blit(zaruri_png[dice_rolled[0]], (20, 275))
     screen.blit(zaruri_png[dice_rolled[1]], (100, 275))
 
@@ -287,6 +373,7 @@ running = True
 tabla = Board()
 tabla.__init__()
 dice_rolled = Dice.roll_dice()
+
 while running:
     if game_state == "menu1":
         main_menu()
