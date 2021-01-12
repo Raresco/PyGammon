@@ -21,6 +21,12 @@ class Board:
         self.die_stack = []
 
     def ai_pick_piece(self):
+        """
+        Functie care se ocupa de miscarile Inteligentei Artificiale
+        Ia random toate valorile posibile din vectorul tablei.
+        ia toate zarurile la rand din lista de zaruri.
+        incearca sa efectueze miscari cu acesti parametri
+        """
 
         while self.piese_stricate_mov > 0:
             for z in range(23, 18):
@@ -48,7 +54,6 @@ class Board:
 
         i = 23
         while i > 0:
-            print("ai:", self.board[i], " --- ", i)
             if self.board[i] < 0:
                 for j in self.die_stack:
                     print("am ajuns aici")
@@ -57,9 +62,9 @@ class Board:
                         self.die_stack.remove(j)
             i -= 1
 
-    def check_piese_stricate(self):
+    def check_piese_stricate(self):     # Verificam pentru fiecare jucator daca exista piese "mancate"
+
         if self.player_turn == 1:
-            print("S BEJ = ",self.piese_stricate_bej)
             if self.piese_stricate_bej > 0:
                 return True
 
@@ -70,12 +75,30 @@ class Board:
         return False
 
     def init_die_stack(self, d1, d2):
+        """
+        adaugam valorile zarurilor intr-o lista.
+        adaugam 4 elemente daca zarurile sunt la fel.
+
+        :param d1: valoarea primului zar
+        :param d2: valoarea zarului al doilea
+
+        """
+
         if d1 == d2:
             self.die_stack.extend([d1, d1, d1, d1])
         else:
             self.die_stack.extend([d1, d2])
 
     def display_from_vector(self):
+        """
+        functie UI.
+
+        pentru o anumita selectie, facem highlight la pozitia curenta
+        si la pozitiile pe care putem muta
+
+        :return:
+        """
+
         for i in range(len(self.vector_selectii)):
             if self.vector_selectii[i] == 1:
                 if i < 12:
@@ -103,6 +126,14 @@ class Board:
         self.vector_selectii = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def type_of_move(self, x, y):
+        """
+           :param x: pozitia de start
+           :param y: pozitia de final
+           :return:
+           0: miscarea este invalida.
+           1: miscarea este legala.
+           2: miscarea este legala si se efectueaza o capturare
+        """
         correct = 0
 
         for i in self.die_stack:
@@ -130,6 +161,15 @@ class Board:
         return 0    # Invalid
 
     def make_move(self, x, y):
+        """
+        efectuam mutarea piesei de pe pozitia x pe pozitia y
+        scadem din vectorul tablei o unitate
+        de pe pozitia x si adaugam pe pozitia y
+
+        :param x: pozitia de start
+        :param y: pozitia de final
+
+        """
         if self.type_of_move(x, y) == 0:
             print("Invalid Move!")
 
@@ -157,6 +197,11 @@ class Board:
         self.board = board
 
     def draw_pieces(self, cordonate):
+        """
+        functia face render la piesele care fac parte din UI si interfata grafica
+        :param cordonate: un dictionar care face legatura dintre coordonatele in pixeli si coordonatele vectorului de joc
+        """
+
         temporary_board = self.board
 
         p1_piese_afara = font.render(str(self.piese_afara_mov), True, (255, 255, 255))
@@ -202,6 +247,7 @@ class Board:
                         nr_piese += 1
 
     def check_win_condition(self):
+        " Verifica conditia de win, 15 piese scoase din joc"
         if self.piese_afara_bej == 15:
             return 1
         elif self.piese_afara_mov == 15:
@@ -216,6 +262,10 @@ class Dice:
 
     @staticmethod
     def play_dice_animation():
+        """
+        schimbam repede mai multe imagini random cu zarurile pentru
+        a crea o animatie.
+        """
         pygame.mixer.Sound.play(dice_sound)
         for i in range(0, 10):
             dice_roll = Dice.roll_dice()
@@ -279,6 +329,12 @@ def revive_piece(x):
 
 
 def get_position(pos):
+    """
+    transcriem coordonatele in pixeli in coordonatele vectorului tabla.
+
+    :param pos: tupla (x,y), coordonate mouse in pixeli.
+    :return:
+    """
     x, y = pos
     if 200 < x < 487:
         if y < 225:
@@ -322,6 +378,10 @@ def draw():
 
 
 def main_menu():
+    """
+    Functia pentru meniul principal.
+    dispune de 2 butoane, care schimba game state-ul cand sunt apasate.
+    """
     global game_state, running, vs_ai
 
     # Highlight buttons on mouse-over
@@ -362,6 +422,19 @@ vs_ai = 0
 
 
 def player_vs_player():
+    """
+    functia contine majoritatea logicii jocului.
+    verifica conditia de win.
+    se interschimba intre diferite state-uri ale jocului:
+        -state 10: randul AI-ului sa efectueze o mutare.
+        -state -1: o piesa este mancata si
+         jucatorul trebuie sa o adauge pe tabla
+        -state 0: jucatorul trebuie sa dea cu zarul.
+        -state 1: jucatorul trebuie sa alege o piesa de a sa pe care
+         sa o mute.
+        -state 2: jucatorul trebuie sa aleaga o pozitie valida unde
+        sa mute piesa.
+    """
     global diceRoll, current_player, x, game_state
     global running, dice_rolled
 
@@ -566,17 +639,15 @@ hvh_button = Button(305, 200, human_vs_human, human_vs_human_toggled, human_vs_h
 hva_button = Button(328, 300, human_vs_ai, human_vs_ai_toggled, human_vs_ai_pressed)
 
 
-# Game Loop
+
 running = True
 tabla = Board()
 tabla.__init__()
 dice_rolled = Dice.roll_dice()
 
+# Game Loop:
 while running:
     if game_state == "menu1":
         main_menu()
     elif game_state == "menu2":
         player_vs_player()
-
-
-
