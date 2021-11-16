@@ -1,3 +1,4 @@
 # PyGammon
-Proiect scris in python pentru facultate.
-Joc de table cu interfata grafica ce permite jucarea jocului de table in 2 jucatori sau impotriva unui AI minimal.
+Python Project for university.
+Backgammon game with a minimal AI and Graphical Interface.
+Must be refactored, It's not written in the most efficient way possible.
